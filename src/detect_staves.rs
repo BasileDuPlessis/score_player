@@ -1,4 +1,36 @@
-fn detect_lines(pixels: &Vec<Vec<u16>>) -> Vec<bool> {
+struct PixelInspector {
+    line_number: usize,
+    row_value: Vec<f32>,
+}
+
+impl PixelInspector {
+    fn new(line: usize) -> PixelInspector {
+        PixelInspector {
+            line_number: line,
+            row_value: Vec::new(),
+        }
+    }
+
+    fn push_row(&mut self, row: &Vec<u8>) {
+        self.row_value.push(mean(row));
+    }
+
+    fn inspect(&self) -> Vec<bool> {
+        let mut result = Vec::new();
+        let row_value_mean = mean(&self.row_value);
+        let row_value_deviation = standard_deviation(&self.row_value, row_value_mean);
+        let threshold = row_value_mean - row_value_deviation;
+
+        for v in self.row_value.iter() {
+            result.push(v <= &threshold);
+        }
+
+        Vec::new()
+    }
+}
+
+
+fn detect_lines(pixels: &Vec<Vec<u8>>) -> Vec<bool> {
     let mut result = Vec::new();
     let mut row_value: Vec<f32> = Vec::new();
 
@@ -109,6 +141,13 @@ fn is_staff(black_lines: &[(usize, usize); 5]) -> bool {
 mod tests {
 
     #[test]
+    fn pixel_inspector() {
+        let mut pixel_inspector = super::PixelInspector::new(10);
+        pixel_inspector.push_row(&vec![0]);
+        assert_eq!(pixel_inspector.inspect(), vec![false]);
+    }
+
+    #[test]
     fn pixels_to_lines() {
         assert_eq!(
             super::detect_lines(&vec![vec![1, 1], vec![0, 1], vec![1, 1],]),
@@ -117,16 +156,16 @@ mod tests {
         assert_eq!(
             super::detect_lines(&vec![
                 vec![1, 1, 1, 1, 1],
-                vec![1, 0, 0, 0, 1],
+                vec![0, 0, 0, 0, 0],
                 vec![1, 1, 1, 1, 1],
-                vec![1, 0, 0, 0, 1],
+                vec![1, 0, 0, 0, 0],
                 vec![1, 1, 1, 1, 1],
-                vec![1, 0, 0, 0, 1],
+                vec![1, 0, 0, 0, 0],
                 vec![1, 1, 1, 1, 1],
-                vec![1, 0, 0, 0, 1],
+                vec![1, 0, 1, 0, 0],//not a line
                 vec![1, 1, 1, 1, 1],
             ]),
-            vec![false, true, false, true, false, true, false, true, false]
+            vec![false, true, false, true, false, true, false, false, false]
         );
     }
 
@@ -174,5 +213,14 @@ mod tests {
 
     fn is_staff(staff_line_index: &[(usize, usize); 5]) {
         assert!(super::is_staff(staff_line_index));
+    }
+
+    #[test]
+    fn not_staves() {
+        is_not_staff(&[(0, 1), (4, 3), (8, 1), (12, 1), (16, 1)]); //visible variations
+    }
+
+    fn is_not_staff(staff_line_index: &[(usize, usize); 5]) {
+        assert!(!super::is_staff(staff_line_index));
     }
 }
