@@ -1,5 +1,4 @@
 fn detect_lines(pixels: &Vec<Vec<u16>>) -> Vec<bool> {
-    //comment
     let mut result = Vec::new();
     let mut row_value: Vec<f32> = Vec::new();
 
